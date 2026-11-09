@@ -1,11 +1,10 @@
 import logging
 import os
-
 import psycopg2
+from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
-from flask import Flask, render_template
+from flask import Flask, jsonify, render_template
 
-# Carga las variables definidas en el archivo .env (si existe) al entorno.
 load_dotenv()
 
 app = Flask(__name__)
@@ -13,53 +12,50 @@ logger = logging.getLogger(__name__)
 
 
 def get_db_connection():
-    # Las credenciales viven únicamente en variables de entorno (ver .env.example).
-    # No se les pone un valor por defecto aquí: si faltan, no hay ninguna
-    # credencial "de respaldo" escondida en el código fuente.
+    """Establece conexión a la base de datos usando variables de entorno."""
     return psycopg2.connect(
-        host=os.getenv("DB_HOST"),
-        port=os.getenv("DB_PORT"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD"),
-        dbname=os.getenv("DB_NAME"),
+        host=os.getenv("DB_HOST", "db"),
+        port=os.getenv("DB_PORT", "5432"),
+        user=os.getenv("DB_USER", "postgres"),
+        password=os.getenv("DB_PASSWORD", "postgres"),
+        dbname=os.getenv("DB_NAME", "datamart"),
+        cursor_factory=RealDictCursor  # Retorna diccionarios en lugar de tuplas
     )
-
-# ---------------------------------------------------------------------------
-# Mal ejemplo (NO HACER ESTO): credenciales hardcodeadas en el código fuente.
-# Cualquiera que vea este archivo, o el historial de git, vería la contraseña
-# real de la base de datos. Y para cambiarla habría que tocar el código en
-# vez de solo la variable de entorno.
-#
-# def get_db_connection():
-#     return psycopg2.connect(
-#         host="localhost",
-#         port="5432",
-#         user="postgres",
-#         password="root1234",
-#         dbname="db",
-#     )
-# ---------------------------------------------------------------------------
 
 
 @app.route("/")
 def index():
-    students = []
+    """Página principal que muestra la tabla con el Ticket Promedio por Tienda."""
+    resultados = []
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM students ORDER BY student_id")
-        students = cursor.fetchall()
+        # Consulta a la tabla que genera el pipeline MapReduce
+        cursor.execute("SELECT tienda, ticket_promedio FROM resultados_ticket_promedio ORDER BY tienda;")
+        resultados = cursor.fetchall()
         cursor.close()
         conn.close()
-    except psycopg2.OperationalError:
-        logger.warning("No se pudo conectar a la base de datos, mostrando lista vacía.")
-    return render_template("index.html", students=students)
+    except Exception as e:
+        logger.warning(f"No se pudo conectar o consultar la base de datos: {e}")
+
+    return render_template("index.html", resultados=resultados)
 
 
-@app.route("/about")
-def about():
-    return render_template("about.html")
+@app.route("/api/resultados", methods=["GET"])
+def get_resultados():
+    """Endpoint REST JSON para exponer las métricas calculadas."""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT tienda, ticket_promedio FROM resultados_ticket_promedio ORDER BY tienda;")
+        resultados = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return jsonify(resultados), 200
+    except Exception as e:
+        logger.error(f"Error al obtener resultados: {e}")
+        return jsonify({"error": "No se pudieron obtener los datos"}), 500
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5001, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)

@@ -3,3 +3,7 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+ventas_*.csv
+__pycache__/
+.env

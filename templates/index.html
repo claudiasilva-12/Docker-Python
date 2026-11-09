@@ -1,37 +1,30 @@
-{% extends "base.html" %}
-
-{% block title %}Alumnos{% endblock %}
-
-{% block content %}
-    <div class="card shadow-sm">
-        <div class="card-header bg-primary text-white">
-            <h1 class="h4 mb-0">Listado de alumnos</h1>
-        </div>
-        <div class="card-body p-0">
-            <table class="table table-striped table-hover mb-0">
-                <thead class="table-dark">
-                    <tr>
-                        <th>ID</th>
-                        <th>Nombre</th>
-                        <th>Apellido</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for student in students %}
-                        <tr>
-                            <td>{{ student[0] }}</td>
-                            <td>{{ student[1] }}</td>
-                            <td>{{ student[2] }}</td>
-                        </tr>
-                    {% else %}
-                        <tr>
-                            <td colspan="3" class="text-center text-muted py-4">
-                                No hay alumnos registrados.
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-{% endblock %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Resultados — Ticket Promedio por Tienda</title>
+</head>
+<body>
+    <h1>Ticket Promedio por Tienda</h1>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Tienda</th>
+                <th>Ticket Promedio ($)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in resultados %}
+            <tr>
+                <td>{{ row.tienda }}</td>
+                <td>{{ row.ticket_promedio }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="2">No hay datos procesados disponibles.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
